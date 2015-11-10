@@ -15,7 +15,6 @@ object LABuild  extends Build {
   def baseSettings = Defaults.defaultSettings ++ Seq(
     organization := "com.redhat.et",
     version := VERSION,
-    name := "logAnalysis",
     scalaVersion := "2.10.4",
     resolvers ++= Seq(
       "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
@@ -49,7 +48,8 @@ object LABuild  extends Build {
   
   def breezeSettings = Seq(
     libraryDependencies ++= Seq(
-      "org.scalanlp" %% "breeze" % "0.6"
+      "org.scalanlp" %% "breeze" % "0.6",
+      "org.scalanlp" %% "chalk" % "1.3.0"
     )
   )
   
@@ -73,15 +73,19 @@ object LABuild  extends Build {
       "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
   )
   
-  def commonSettings = baseSettings ++ sparkSettings ++ jsonSettings
+  def commonSettings = baseSettings ++ sparkSettings ++ jsonSettings ++ Seq(
+    name := "log-analysis-common"
+  )
   
   def analysisSettings = commonSettings ++ breezeSettings ++ testSettings ++ Seq(
+    name := "log-analysis",
     initialCommands in console :=
       """
         |import org.apache.spark.SparkConf
         |import org.apache.spark.SparkContext
         |import org.apache.spark.SparkContext._
         |import org.apache.spark.rdd.RDD
+        |val app = com.redhat.et.silex.app.ReplApp.makeApp
         |val spark = app.context
         |val sqlc = app.sqlContext
         |import sqlc._
@@ -91,6 +95,7 @@ object LABuild  extends Build {
   )
   
   def replSettings = analysisSettings ++ Seq(
+    name := "log-analysis-repl",
     libraryDependencies += "org.scala-lang" % "jline" % SCALA_VERSION
   )
   
