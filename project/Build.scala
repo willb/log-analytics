@@ -49,7 +49,7 @@ object LABuild  extends Build {
   def breezeSettings = Seq(
     libraryDependencies ++= Seq(
       "org.scalanlp" %% "breeze" % "0.6",
-      "org.scalanlp" %% "chalk" % "1.3.0"
+      "org.scalanlp" %% "chalk" % "1.3.2"
     )
   )
   
@@ -99,6 +99,6 @@ object LABuild  extends Build {
     libraryDependencies += "org.scala-lang" % "jline" % SCALA_VERSION
   )
   
-  val SPARK_VERSION = "1.5.1"
-  val SCALA_VERSION = "2.10.4"
+  val SPARK_VERSION = "1.5.2"
+  val SCALA_VERSION = "2.11.2"
 }
