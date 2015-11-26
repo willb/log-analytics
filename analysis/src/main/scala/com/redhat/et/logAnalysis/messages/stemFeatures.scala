@@ -21,12 +21,12 @@ package com.redhat.et.logAnalysis.messages;
 
 trait BasicStringCleaners {
   import BasicStringCleaners.{boringChars, spaces}
-  def collapseWhitespace(s: String): String = spaces.replaceAllIn(s, " ")
-  def stripPunctuation(s: String): String = boringChars.replaceAllIn(s, "")
-  
+  private [messages] def collapseWhitespace(s: String): String = spaces.replaceAllIn(s, " ")
+  private [messages] def stripPunctuation(s: String): String = boringChars.replaceAllIn(s, "")
+  def words(s: String, post: String=>String = identity[String]): Array[String] = collapseWhitespace(s).split(" ").map(post(stripPunctuation(_)))
 }
 
 object BasicStringCleaners {
   private [messages] val spaces = new scala.util.matching.Regex("[\\s]+")
-  private [messages] val boringChars = new scala.util.matching.Regex("[^A-Za-z0-9-_]")
+  private [messages] val boringChars = new scala.util.matching.Regex("[^A-Za-z0-9-_.]")
 }
