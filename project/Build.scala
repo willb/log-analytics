@@ -100,5 +100,5 @@ object LABuild  extends Build {
   )
   
   val SPARK_VERSION = "1.5.2"
-  val SCALA_VERSION = "2.11.2"
+  val SCALA_VERSION = "2.10.5"
 }
