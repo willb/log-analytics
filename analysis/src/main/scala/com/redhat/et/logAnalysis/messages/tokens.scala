@@ -1,5 +1,5 @@
 /*
- * stemFeatures.scala
+ * tokens.scala
  * author:  William Benton <willb@redhat.com>
  *
  * Copyright (c) 2015 Red Hat, Inc.
