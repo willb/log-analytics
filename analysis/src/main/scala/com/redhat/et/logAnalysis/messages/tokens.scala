@@ -20,13 +20,25 @@
 package com.redhat.et.logAnalysis.messages;
 
 trait BasicStringCleaners {
-  import BasicStringCleaners.{boringChars, spaces}
-  private [messages] def collapseWhitespace(s: String): String = spaces.replaceAllIn(s, " ")
-  private [messages] def stripPunctuation(s: String): String = boringChars.replaceAllIn(s, "")
-  def words(s: String, post: String=>String = identity[String]): Array[String] = collapseWhitespace(s).split(" ").map(post(stripPunctuation(_)))
+  import BasicStringCleaners._
+  private [messages] val collapseWhitespace: String => String = replace(spaces, " ")
+  private [messages] val stripPunctuation: String => String = 
+    replace(leadingPunctuation, " ") compose 
+    replace(trailingPunctuation, " ") compose 
+    replace(rejectedIntratokenPunctuation, "")
+  
+  def tokens(s: String, post: String=>String = identity[String]): Seq[String] = 
+    collapseWhitespace(s)
+      .split(" ")
+      .map(s => post(stripPunctuation(s)))
+      .collect { case token @ oneletter(_) => token } 
 }
 
 object BasicStringCleaners {
   private [messages] val spaces = new scala.util.matching.Regex("[\\s]+")
-  private [messages] val boringChars = new scala.util.matching.Regex("[^A-Za-z0-9-_.]")
+  private [messages] val oneletter = new scala.util.matching.Regex(".*([A-Za-z_-]).*")
+  private [messages] val rejectedIntratokenPunctuation = new scala.util.matching.Regex("[^A-Za-z0-9-_./:@]")
+  private [messages] val leadingPunctuation = new scala.util.matching.Regex("\\s[^A-Za-z0-9-_/]+")
+  private [messages] val trailingPunctuation = new scala.util.matching.Regex("[^A-Za-z0-9-_/]+\\s")
+  private [messages] def replace(r: scala.util.matching.Regex, s: String) = { (orig:String) => r.replaceAllIn(orig, s) }
 }
