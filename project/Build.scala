@@ -15,7 +15,7 @@ object LABuild  extends Build {
   def baseSettings = Defaults.defaultSettings ++ Seq(
     organization := "com.redhat.et",
     version := VERSION,
-    scalaVersion := "2.10.4",
+    scalaVersion := SCALA_VERSION,
     resolvers ++= Seq(
       "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
       "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
@@ -29,7 +29,7 @@ object LABuild  extends Build {
         "org.json4s" %%  "json4s-jackson" % "3.2.6",
         "org.json4s" %% "json4s-ext" % "3.2.11",
         "joda-time" % "joda-time" % "2.5",
-        "com.redhat.et" %% "silex" % "0.0.7"
+        "com.redhat.et" %% "silex" % "0.0.8"
     ),
     scalacOptions ++= Seq("-feature", "-Yrepl-sync", "-target:jvm-1.7", "-Xlint")
   )
@@ -99,6 +99,6 @@ object LABuild  extends Build {
     libraryDependencies += "org.scala-lang" % "jline" % SCALA_VERSION
   )
   
-  val SPARK_VERSION = "1.5.2"
+  val SPARK_VERSION = "1.6.0"
   val SCALA_VERSION = "2.10.5"
 }
