@@ -25,13 +25,13 @@ import org.apache.spark.sql.functions._
 object FrameUtils {
   def destructure(struct: StructType, prefix: Option[String]=None): Array[String] = { 
     struct.fields flatMap {
-      case StructField(name, sub@StructType(_), _, _) => destructure(sub, Some(s"${prefix.getOrElse("")}${name}."))
-      case StructField(name, _, _, _) => Array(s"${prefix.getOrElse("")}${name}")
+      case StructField(name, sub@StructType(_), _, _) => destructure(sub, Some(s"${prefix.getOrElse("")}`${name}`."))
+      case StructField(name, _, _, _) => Array(s"${prefix.getOrElse("")}`${name}`")
     }
   }
 
   def flatten(df: DataFrame) = {
-    val cols = destructure(df.schema).toList map { name => column(name).as(name.replace(".", "__")) }
+    val cols = destructure(df.schema).toList map { name => column(name).as(name.replace(".", "_").replace("`", "")) }
     df.select(cols : _*)
   }
 
