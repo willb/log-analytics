@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+package com.redhat.et.descry.util;
+
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
