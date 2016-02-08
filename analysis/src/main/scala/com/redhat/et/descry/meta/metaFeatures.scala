@@ -40,7 +40,7 @@ object MetaFeatures {
   
   def oneHotify(df: DataFrame, inputCol: String): DataFrame = {
     val dfNormalized = df.select(df.columns map { 
-      case col if col == inputCol => lower(column(col)).as(col) 
+      case col if col == inputCol => when(isnull(column(col)), "NULL").otherwise(lower(column(col))).as(col) 
       case col => column(col)
     } : _*)
     
