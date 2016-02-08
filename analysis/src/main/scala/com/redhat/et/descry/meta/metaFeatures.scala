@@ -37,7 +37,8 @@ object MetaFeatures {
   val factorColumns = Set(
     "hostname", "level", "rsyslog_app-name", "rsyslog_facility", "rsyslog_programname", "rsyslog_inputname"
   )
-  def oneHotify(df: DataFrame, inputCol: String) = {
+  
+  def oneHotify(df: DataFrame, inputCol: String): DataFrame = {
     val dfNormalized = df.select(df.columns map { 
       case col if col == inputCol => lower(column(col)).as(col) 
       case col => column(col)
@@ -57,6 +58,11 @@ object MetaFeatures {
     val result = encoder.transform(indexed)
     
     result.select(result.columns collect { case col if !col.contains("STRINGINDEX_") => column(col)} : _*)
+  }
+  
+  def oneHotify(df: DataFrame, inputCol: String, inputCols: String*): DataFrame = {
+    val availableColumns = Set(df.columns : _*)
+    (inputCol :: inputCols.toList).filter { col => availableColumns.contains(col) }.foldLeft(df)((frame: DataFrame, col: String) => oneHotify(frame, col))
   }
   
   def vectorize(df: DataFrame, columns: Set[String] = factorColumns) = {
