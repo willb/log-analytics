@@ -56,14 +56,15 @@ object LABuild  extends Build {
   def testSettings = Seq(
     fork := true,
     libraryDependencies ++= Seq(
-      "org.scalacheck" %% "scalacheck" % "1.11.3" % "test"
+      "org.scalacheck" %% "scalacheck" % "1.11.3" % "test",
+      "org.scalatest" %% "scalatest" % "2.2.4" % "test"
     )
   )
   
   def jsonSettings = Seq(
     libraryDependencies ++= Seq(
       "org.json4s" %% "json4s-jackson" % "3.2.10",
-      "org.json4s" %% "json4s-ext" % "3.2.10",
+      "org.json4s" %% "json4s-ext" % "3.2.11",
       "joda-time" % "joda-time" % "2.7"
     ) 
   )
