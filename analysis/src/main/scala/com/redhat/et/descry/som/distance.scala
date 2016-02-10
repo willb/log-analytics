@@ -41,8 +41,10 @@ class AngularSimilarity extends Function2[V, V, Double] {
     var acc: Double = 0.0
     var idx1: Int = 0
     var idx2: Int = 0
+    val l1 = i1s.length
+    val l2 = i2s.length
     
-    while(idx1 < i1s.length && idx2 < i2s.length) {
+    while(idx1 < l1 && idx2 < l2) {
       if(i1s(idx1) > i2s(idx2)) {
         idx2 = idx2 + 1
       } else if (i1s(idx1) < i2s(idx2)) {
