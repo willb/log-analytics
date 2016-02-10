@@ -29,22 +29,32 @@ class AngularSimilarity extends Function2[V, V, Double] {
     case s@SV(_, _, _) => s
   } 
 
-  @inline protected def magnitude: SV => Double = {
-    case SV(_, _, vs) => scala.math.sqrt(vs.foldLeft(0.0d){(acc, v) => acc + v * v})
+  @inline protected def magnitude(sv: SV): Double = {
+    val SV(_, _, vs) = sv
+    scala.math.sqrt(vs.foldLeft(0.0d)((acc, v) => acc + (v*v)))
   }
   
-  @inline protected def dot(v1: SV, v2: SV): Double = {
+  @inline private final def dot(v1: SV, v2: SV): Double = {
     val SV(_, i1s, v1s) = v1
     val SV(_, i2s, v2s) = v2
-    dotImpl((i1s zip v1s).toList, (i2s zip v2s).toList)
-  }
-  
-  @tailrec final private def dotImpl(v1: List[Pair[Int, Double]], v2: List[Pair[Int, Double]], acc:Double = 0d): Double = (v1, v2) match {
-    case ((i1,_)::e1s, (i2,_)::e2s) if i1 < i2 => dotImpl(e1s, v2, acc)
-    case ((i1,_)::e1s, (i2,_)::e2s) if i1 > i2 => dotImpl(v1, e2s, acc)
-    case ((i1,v1)::e1s, (i2,v2)::e2s) if i1 == i2 => dotImpl(e1s, e2s, acc + (v1 * v2))
-    case (Nil, _) => acc
-    case (_, Nil) => acc
+    
+    var acc: Double = 0.0
+    var idx1: Int = 0
+    var idx2: Int = 0
+    
+    while(idx1 < i1s.length && idx2 < i2s.length) {
+      if(i1s(idx1) > i2s(idx2)) {
+        idx2 = idx2 + 1
+      } else if (i1s(idx1) < i2s(idx2)) {
+        idx1 = idx1 + 1
+      } else {
+        acc = acc + (v1s(idx1) * v2s(idx2))
+        idx1 = idx1 + 1
+        idx2 = idx2 + 1
+      }
+    }
+    
+    acc
   }
   
   @inline protected def cossim(v1: SV, v2: SV): Double = {
