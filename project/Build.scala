@@ -24,7 +24,6 @@ object LABuild  extends Build {
       "spray" at "http://repo.spray.io/"
     ),
     libraryDependencies ++= Seq(
-//        "com.github.nscala-time" %% "nscala-time" % "2.10.0",
         "org.json4s" %%  "json4s-jackson" % "3.2.10",
         "org.json4s" %% "json4s-ext" % "3.2.11",
         "joda-time" % "joda-time" % "2.7",
@@ -47,8 +46,7 @@ object LABuild  extends Build {
   
   def breezeSettings = Seq(
     libraryDependencies ++= Seq(
-      "org.scalanlp" %% "breeze" % "0.12"/*,
-      "org.scalanlp" % "chalk" % "1.3.3"*/
+      "org.scalanlp" %% "breeze" % "0.12"
     )
   )
   
