@@ -24,12 +24,11 @@ object LABuild  extends Build {
       "spray" at "http://repo.spray.io/"
     ),
     libraryDependencies ++= Seq(
-        "com.github.nscala-time" %% "nscala-time" % "0.6.0",
-        "io.spray" %%  "spray-json" % "1.2.5",
-        "org.json4s" %%  "json4s-jackson" % "3.2.6",
+//        "com.github.nscala-time" %% "nscala-time" % "2.10.0",
+        "org.json4s" %%  "json4s-jackson" % "3.2.10",
         "org.json4s" %% "json4s-ext" % "3.2.11",
-        "joda-time" % "joda-time" % "2.5",
-        "com.redhat.et" %% "silex" % "0.0.8"
+        "joda-time" % "joda-time" % "2.7",
+        "com.redhat.et" %% "silex" % "0.0.9"
     ),
     scalacOptions ++= Seq("-feature", "-Yrepl-sync", "-target:jvm-1.7", "-Xlint")
   )
@@ -48,8 +47,8 @@ object LABuild  extends Build {
   
   def breezeSettings = Seq(
     libraryDependencies ++= Seq(
-      "org.scalanlp" %% "breeze" % "0.6",
-      "org.scalanlp" %% "chalk" % "1.3.2"
+      "org.scalanlp" %% "breeze" % "0.12"/*,
+      "org.scalanlp" % "chalk" % "1.3.3"*/
     )
   )
   
@@ -101,5 +100,5 @@ object LABuild  extends Build {
   )
   
   val SPARK_VERSION = "1.6.0"
-  val SCALA_VERSION = "2.10.5"
+  val SCALA_VERSION = "2.11.8"
 }
