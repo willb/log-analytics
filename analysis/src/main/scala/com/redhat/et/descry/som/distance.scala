@@ -59,9 +59,9 @@ class AngularSimilarity extends Function2[V, V, Double] {
     acc
   }
   
-  @inline protected def cossim(v1: SV, v2: SV): Double = {
+  @inline protected def cossim(v1: SV, v2: SV, mv1: Option[Double] = None, mv2: Option[Double] = None): Double = {
     val n = dot(v1, v2)
-    val d = magnitude(v1) * magnitude(v2)
+    val d = mv1.getOrElse(magnitude(v1)) * mv2.getOrElse(magnitude(v2))
     math.min(1.0, math.max(-1.0, n / d))
   }
   
