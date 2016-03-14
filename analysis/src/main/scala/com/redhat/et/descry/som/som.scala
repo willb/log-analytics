@@ -38,3 +38,12 @@ object Neighborhood {
   }
 }
 
+class SOM(val xdim: Int, val ydim: Int, val fdim: Int, entries: DenseVector[DenseVector[Double]]) extends Serializable {
+  
+}
+
+object SOM {
+  def random(xdim: Int, ydim: Int, fdim: Int): SOM = null
+}
+
+case class MapState(counts: DenseVector[Double], weights: DenseVector[DenseVector[Double]])
