@@ -43,7 +43,14 @@ class SOM(val xdim: Int, val ydim: Int, val fdim: Int, entries: DenseVector[Dens
 }
 
 object SOM {
-  def random(xdim: Int, ydim: Int, fdim: Int): SOM = null
+  /** initialize a self-organizing map with random weights */
+  def random(xdim: Int, ydim: Int, fdim: Int, seed: Option[Int] = None): SOM = {
+    // nb: could/should use breeze PRNGs?
+    val rng = seed.map { i => new scala.util.Random(i) }.getOrElse(new scala.util.Random())
+    val randomMap = DenseVector.fill[DenseVector[Double]](xdim * ydim)(DenseVector.fill[Double](fdim)(rng.nextDouble()))
+
+    new SOM(xdim, ydim, fdim, randomMap)
+  }
 }
 
 case class MapState(counts: DenseVector[Double], weights: DenseVector[DenseVector[Double]])
