@@ -23,15 +23,18 @@ package com.redhat.et.descry.som;
 import breeze.linalg._
 
 object Neighborhood {
-  def gaussian(distance: Double, sigma: Double): Double = math.exp(- (distance * distance) / (sigma * sigma))
+  private [this] def gaussian(distance: Double, sigma: Double): Double = math.exp(- (distance * distance) / (sigma * sigma))
   
+  /** Returns a <tt>dim</tt>-element vector of the values for the one-dimensional Gaussian neighborhood function, centered at <tt>c</tt> */
   def vec(c: Int, dim: Int, sigma: Double): DenseVector[Double] = {
     // weights for each distance
     val weights = (0 to math.max(c, math.abs(dim - c))).map { x => gaussian(x.toDouble, sigma) }
     DenseVector((0 to dim).map { x => weights(math.abs(x - c))}.toArray)
   }
   
+  /** Returns a <tt>xdim</tt>*<tt>ydim</tt>-element matrix of the values for the two-dimensional Gaussian neighborhood function, centered at <tt>xc</tt>, <tt>yc</tt> */
   def mat(xc: Int, xdim: Int, xsigma: Double, yc: Int, ydim: Int, ysigma: Double): DenseMatrix[Double] = {
     vec(yc, ydim, ysigma) * vec(xc, xdim, xsigma).t
   }
 }
+
