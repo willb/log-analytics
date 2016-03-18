@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-package com.redhat.et.descry.som;
+package com.redhat.et.descry.som
 
 import breeze.linalg._
 
@@ -38,8 +38,26 @@ object Neighborhood {
   }
 }
 
+case class SomTrainingState(counts: DenseVector[Double], weights: DenseVector[DenseVector[Double]])
+
 class SOM(val xdim: Int, val ydim: Int, val fdim: Int, entries: DenseVector[DenseVector[Double]]) extends Serializable {
+  import breeze.numerics._
   
+  val norms = {
+    val ea = entries.toArray
+    ea zip ea.map(norm(_))
+  }
+  
+  def closest(vec: DenseVector[Double]): Int = {
+    val vn = norm(vec)
+    norms
+      .zipWithIndex
+      .map { 
+        case ((e: DenseVector[Double], en: Double), i: Int) => (i, math.min(1.0, math.max(-1.0, (e dot vec) / (en * vn))))
+      }
+      .reduce { (a: Tuple2[Int, Double], b: Tuple2[Int, Double]) => if (a._2 > b._2) a else b }
+      ._1 
+  }
 }
 
 object SOM {
@@ -52,5 +70,3 @@ object SOM {
     new SOM(xdim, ydim, fdim, randomMap)
   }
 }
-
-case class MapState(counts: DenseVector[Double], weights: DenseVector[DenseVector[Double]])
