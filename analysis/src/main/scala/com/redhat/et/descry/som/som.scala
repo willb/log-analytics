@@ -38,29 +38,38 @@ object Neighborhood {
   }
 }
 
-case class SomTrainingState(counts: DenseVector[Double], weights: DenseVector[DenseVector[Double]])
-
 class SOM(val xdim: Int, val ydim: Int, val fdim: Int, entries: DenseVector[DenseVector[Double]]) extends Serializable {
   import breeze.numerics._
   
   val norms = {
     val ea = entries.toArray
-    ea zip ea.map(norm(_))
+    ea.zip(ea.map(norm(_))).zipWithIndex
   }
   
-  def closest(vec: DenseVector[Double]): Int = {
-    val vn = norm(vec)
+  /** Return the index of the closest vector in the map to the supplied example */
+  def closest(example: DenseVector[Double]): Int = {
+    val vn = norm(example)
     norms
-      .zipWithIndex
       .map { 
-        case ((e: DenseVector[Double], en: Double), i: Int) => (i, math.min(1.0, math.max(-1.0, (e dot vec) / (en * vn))))
+        case ((e: DenseVector[Double], en: Double), i: Int) => (i, math.min(1.0, math.max(-1.0, (e dot example) / (en * vn))))
       }
       .reduce { (a: Tuple2[Int, Double], b: Tuple2[Int, Double]) => if (a._2 > b._2) a else b }
-      ._1 
+      ._1
   }
 }
 
 object SOM {
+  import breeze.numerics._
+  import org.apache.spark.rdd.RDD
+  import org.apache.spark.mllib.linalg.{Vector=>SV, DenseVector=>SDV, SparseVector=>SSV}
+
+  private [som] case class SomTrainingState(counts: Array[Int], weights: Array[DenseVector[Double]]) {
+    def update(index: Int, example: DenseVector[Double]) {
+      counts(index) = counts(index) + 1
+      weights(index) = weights(index) + example
+    }
+  }
+
   /** initialize a self-organizing map with random weights */
   def random(xdim: Int, ydim: Int, fdim: Int, seed: Option[Int] = None): SOM = {
     // nb: could/should use breeze PRNGs?
@@ -69,4 +78,5 @@ object SOM {
 
     new SOM(xdim, ydim, fdim, randomMap)
   }
+  
 }
