@@ -64,10 +64,19 @@ object SOM {
   import org.apache.spark.mllib.linalg.{Vector=>SV, DenseVector=>SDV, SparseVector=>SSV}
 
   private [som] case class SomTrainingState(counts: Array[Int], weights: Array[DenseVector[Double]]) {
+    /* destructively updates this state with a new example */
     def update(index: Int, example: DenseVector[Double]) {
       counts(index) = counts(index) + 1
       weights(index) = weights(index) + example
     }
+    
+    /* destructively merges other into this */
+    def combine(other: SomTrainingState) = { 
+      (0 to counts.length) foreach { index =>
+        this.counts(index) = this.counts(index) + other.counts(index)
+        this.weights(index) = this.weights(index) + other.weights(index)
+      }
+    } 
   }
 
   /** initialize a self-organizing map with random weights */
@@ -79,4 +88,7 @@ object SOM {
     new SOM(xdim, ydim, fdim, randomMap)
   }
   
+  /** Create a new SOM instance with the results of the training state */
+  private [som] def step(xdim: Int, ydim: Int, fdim: Int, stats: SomTrainingState, sigma: Double) = ???
+  def train(xdim: Int, ydim: Int, iterations: Int, examples: RDD[SV]) = ???
 }
