@@ -28,8 +28,8 @@ object Neighborhood {
   /** Returns a <tt>dim</tt>-element vector of the values for the one-dimensional Gaussian neighborhood function, centered at <tt>c</tt> */
   def vec(c: Int, dim: Int, sigma: Double): DenseVector[Double] = {
     // weights for each distance
-    val weights = (0 to math.max(c, math.abs(dim - c))).map { x => gaussian(x.toDouble, sigma) }
-    DenseVector((0 to dim).map { x => weights(math.abs(x - c))}.toArray)
+    val weights = (0 until math.max(c, math.abs(dim - c))).map { x => gaussian(x.toDouble, sigma) }
+    DenseVector((0 until dim).map { x => weights(math.abs(x - c))}.toArray)
   }
   
   /** Returns a <tt>xdim</tt>*<tt>ydim</tt>-element matrix of the values for the two-dimensional Gaussian neighborhood function, centered at <tt>xc</tt>, <tt>yc</tt> */
@@ -47,8 +47,8 @@ class SOM(val xdim: Int, val ydim: Int, val fdim: Int, entries: DenseVector[Dens
   }
   
   /** Return the index of the closest vector in the map to the supplied example */
-  def closest(example: DenseVector[Double]): Int = {
-    val vn = norm(example)
+  def closest(example: DenseVector[Double], exampleNorm: Option[Double] = None): Int = {
+    val vn = exampleNorm.getOrElse(norm(example))
     norms
       .map { 
         case ((e: DenseVector[Double], en: Double), i: Int) => (i, math.min(1.0, math.max(-1.0, (e dot example) / (en * vn))))
@@ -72,7 +72,7 @@ object SOM {
     
     /* destructively merges other into this */
     def combine(other: SomTrainingState) = { 
-      (0 to counts.length) foreach { index =>
+      (0 until counts.length) foreach { index =>
         this.counts(index) = this.counts(index) + other.counts(index)
         this.weights(index) = this.weights(index) + other.weights(index)
       }
@@ -89,6 +89,12 @@ object SOM {
   }
   
   /** Create a new SOM instance with the results of the training state */
-  private [som] def step(xdim: Int, ydim: Int, fdim: Int, stats: SomTrainingState, sigma: Double) = ???
+  private [som] def step(xdim: Int, ydim: Int, fdim: Int, state: SomTrainingState, sigma: Double) = {
+    val entries = DenseVector.fill[DenseVector[Double]](xdim * ydim)(DenseVector.zeros[Double](fdim))
+    (0 until xdim * ydim).foreach { i =>
+      
+    }
+  }
+  
   def train(xdim: Int, ydim: Int, iterations: Int, examples: RDD[SV]) = ???
 }
