@@ -48,11 +48,11 @@ class SOM(val xdim: Int, val ydim: Int, val fdim: Int, entries: DenseVector[Dens
   }
   
   /** Return the index of the closest vector in the map to the supplied example */
-  def closest(example: DenseVector[Double], exampleNorm: Option[Double] = None): Int = {
+  def closest(example: Vector[Double], exampleNorm: Option[Double] = None): Int = {
     val vn = exampleNorm.getOrElse(norm(example))
     norms
       .map { 
-        case ((e: DenseVector[Double], en: Double), i: Int) => (i, math.min(1.0, math.max(-1.0, (e dot example) / (en * vn))))
+        case ((e: Vector[Double], en: Double), i: Int) => (i, math.min(1.0, math.max(-1.0, (e dot example) / (en * vn))))
       }
       .reduce { (a: Tuple2[Int, Double], b: Tuple2[Int, Double]) => if (a._2 > b._2) a else b }
       ._1
@@ -66,9 +66,10 @@ object SOM {
 
   private [som] case class SomTrainingState(counts: Array[Int], weights: Array[DenseVector[Double]]) {
     /* destructively updates this state with a new example */
-    def update(index: Int, example: DenseVector[Double]) {
+    def update(index: Int, example: Vector[Double]) = {
       counts(index) = counts(index) + 1
       weights(index) = weights(index) + example
+      this
     }
     
     /* destructively merges other into this */
@@ -77,9 +78,14 @@ object SOM {
         this.counts(index) = this.counts(index) + other.counts(index)
         this.weights(index) = this.weights(index) + other.weights(index)
       }
+      this
     } 
   }
-
+  
+  private [som] object SomTrainingState {
+    def empty(dim: Int, fdim: Int): SomTrainingState = SomTrainingState(Array.fill(dim)(0), Array.fill(dim)(DenseVector.zeros[Double](fdim)))
+  }
+  
   /** initialize a self-organizing map with random weights */
   def random(xdim: Int, ydim: Int, fdim: Int, seed: Option[Int] = None): SOM = {
     // nb: could/should use breeze PRNGs?
@@ -111,5 +117,46 @@ object SOM {
     new SOM(xdim, ydim, fdim, newWeights)
   }
   
-  def train(xdim: Int, ydim: Int, iterations: Int, examples: RDD[SV]) = ???
+  @inline private [som] def spark2breeze(vec: SV): Vector[Double] = {
+    vec match {
+      case sv: SSV => {
+        val vb = new VectorBuilder[Double]()
+        (sv.indices zip sv.values).foreach { case (idx: Int, v: Double) =>
+          vb.add(idx, v)
+        }
+        vb.toSparseVector()
+      }
+      
+      case dv: SDV => {
+        DenseVector(dv.toArray)
+      }
+    }
+  }
+  
+  def train(xdim: Int, ydim: Int, fdim: Int, iterations: Int, examples: RDD[SV], seed: Option[Int] = None) = {
+    val xSigmaStep = (xdim - 0.01) / iterations
+    val ySigmaStep = (ydim - 0.01) / iterations
+    val sc = examples.context
+    val normedExamples = examples.map { 
+      ex => {
+        val bv = spark2breeze(ex)
+        (bv, norm(bv))
+      }
+    }.cache
+    
+    (0 until iterations).foldLeft(random(xdim, ydim, fdim, seed)) { (acc, it) =>
+      val xSigma = xdim - (xSigmaStep * it)
+      val ySigma = ydim - (ySigmaStep * it)
+      val currentSOM = sc.broadcast(acc)
+      
+      val newState = normedExamples.aggregate(SomTrainingState.empty(xdim * ydim, fdim))(
+        {case (state, (example: Vector[Double], n: Double)) => state.update(currentSOM.value.closest(example, Some(n)), example)}, 
+        {case (s1, s2) => s1.combine(s2)}
+      )
+      
+      currentSOM.unpersist
+      
+      step(xdim, ydim, fdim, newState, xSigma, ySigma)
+    }
+  }
 }
