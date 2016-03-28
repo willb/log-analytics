@@ -97,6 +97,6 @@ object LABuild  extends Build {
     libraryDependencies += "org.scala-lang" % "jline" % SCALA_VERSION
   )
   
-  val SPARK_VERSION = "1.6.0"
+  val SPARK_VERSION = "1.6.1"
   val SCALA_VERSION = "2.11.8"
 }
