@@ -23,6 +23,19 @@ package com.redhat.et.descry.som
 import breeze.linalg._
 import breeze.numerics._
 
+object Log {
+  import java.util.logging.{Logger, Level}
+  val logger = Logger.getLogger("com.redhat.et.descry.som")
+  def log(level: Level, msg: => String) {
+//    if (logger.getLevel.intValue < level.intValue) {
+      logger.log(level, msg)
+//    }
+  }
+  def debug(msg: => String) {
+    logger.log(Level.FINE, msg)
+  }
+}
+
 object Neighborhood {
   private [this] def gaussian(distance: Double, sigma: Double): Double = math.exp(- (distance * distance) / (sigma * sigma))
   
@@ -39,23 +52,24 @@ object Neighborhood {
   }
 }
 
-class SOM(val xdim: Int, val ydim: Int, val fdim: Int, entries: DenseVector[DenseVector[Double]]) extends Serializable {
+class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[DenseVector[Double]]) extends Serializable {
   import breeze.numerics._
   
-  val norms = {
-    val ea = entries.toArray
-    ea.zip(ea.map(norm(_))).zipWithIndex
-  }
+  val entries = _entries.toArray
+  
+  val norms = entries.zip(entries.map(norm(_))).zipWithIndex
   
   /** Return the index of the closest vector in the map to the supplied example */
   def closest(example: Vector[Double], exampleNorm: Option[Double] = None): Int = {
     val vn = exampleNorm.getOrElse(norm(example))
-    norms
+    val result = norms
       .map { 
         case ((e: Vector[Double], en: Double), i: Int) => (i, math.min(1.0, math.max(-1.0, (e dot example) / (en * vn))))
       }
       .reduce { (a: Tuple2[Int, Double], b: Tuple2[Int, Double]) => if (a._2 > b._2) a else b }
       ._1
+    Log.debug(s"SOM.closest returned ${result}")
+    result
   }
 }
 
@@ -63,7 +77,7 @@ object SOM {
   import breeze.numerics._
   import org.apache.spark.rdd.RDD
   import org.apache.spark.mllib.linalg.{Vector=>SV, DenseVector=>SDV, SparseVector=>SSV}
-
+  
   private [som] case class SomTrainingState(counts: Array[Int], weights: Array[DenseVector[Double]]) {
     /* destructively updates this state with a new example */
     def update(index: Int, example: Vector[Double]) = {
@@ -104,16 +118,16 @@ object SOM {
     (0 until xdim * ydim).foreach { idx =>
       val (xc, yc) = (idx % xdim, idx / ydim)
       val counts = state.counts(idx).toDouble
-      val hood = Neighborhood.mat(xc, xdim, xsigma, yc, ydim, ysigma).reshape(xdim * ydim, 1).toDenseVector * counts
-      neighborhoods :+ hood
-      // XXX: the rhs of this doesn't compile but I'm not sure why
-      // weights :+ (seenWeights * (hood * state.counts(idx).toDouble))
-      // XXX: so we're doing it the hard way
-      val update = DenseVector(seenWeights.values.iterator.zip((hood * state.counts(idx).toDouble).values.iterator).map { case (vd, d) => d * vd }.toArray)
-      weights :+ update
+      val hood = Neighborhood.mat(xc, xdim, xsigma, yc, ydim, ysigma).reshape(xdim * ydim, 1).toDenseVector
+      neighborhoods = neighborhoods :+ (hood * counts)
+      val update = DenseVector(hood.toArray.map { hoodDistance => state.weights(idx) * hoodDistance})
+      weights = weights :+ update
     }
     
-    val newWeights = DenseVector(weights.values.iterator.zip(neighborhoods.values.iterator).map { case (vd, d) => vd / d }.toArray)
+    val newWeights = DenseVector(weights.values.iterator.zip(neighborhoods.values.iterator).map { 
+      case (vd, d) if d == 0.0 => DenseVector.zeros[Double](vd.size)
+      case (vd, d) => vd / d 
+    }.toArray)
     new SOM(xdim, ydim, fdim, newWeights)
   }
   
@@ -133,7 +147,7 @@ object SOM {
     }
   }
   
-  def train(xdim: Int, ydim: Int, fdim: Int, iterations: Int, examples: RDD[SV], seed: Option[Int] = None) = {
+  def train(xdim: Int, ydim: Int, fdim: Int, iterations: Int, examples: RDD[SV], seed: Option[Int] = None): SOM = {
     val xSigmaStep = (xdim - 0.01) / iterations
     val ySigmaStep = (ydim - 0.01) / iterations
     val sc = examples.context
