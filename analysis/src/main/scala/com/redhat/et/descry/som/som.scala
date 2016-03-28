@@ -21,6 +21,7 @@
 package com.redhat.et.descry.som
 
 import breeze.linalg._
+import breeze.numerics._
 
 object Neighborhood {
   private [this] def gaussian(distance: Double, sigma: Double): Double = math.exp(- (distance * distance) / (sigma * sigma))
@@ -28,7 +29,7 @@ object Neighborhood {
   /** Returns a <tt>dim</tt>-element vector of the values for the one-dimensional Gaussian neighborhood function, centered at <tt>c</tt> */
   def vec(c: Int, dim: Int, sigma: Double): DenseVector[Double] = {
     // weights for each distance
-    val weights = (0 until math.max(c, math.abs(dim - c))).map { x => gaussian(x.toDouble, sigma) }
+    val weights = (0 to math.max(c, math.abs(dim - c))).map { x => gaussian(x.toDouble, sigma) }
     DenseVector((0 until dim).map { x => weights(math.abs(x - c))}.toArray)
   }
   
@@ -82,18 +83,32 @@ object SOM {
   /** initialize a self-organizing map with random weights */
   def random(xdim: Int, ydim: Int, fdim: Int, seed: Option[Int] = None): SOM = {
     // nb: could/should use breeze PRNGs?
-    val rng = seed.map { i => new scala.util.Random(i) }.getOrElse(new scala.util.Random())
+    val rng = seed.map { s => new scala.util.Random(s) }.getOrElse(new scala.util.Random())
     val randomMap = DenseVector.fill[DenseVector[Double]](xdim * ydim)(DenseVector.fill[Double](fdim)(rng.nextDouble()))
 
     new SOM(xdim, ydim, fdim, randomMap)
   }
   
   /** Create a new SOM instance with the results of the training state */
-  private [som] def step(xdim: Int, ydim: Int, fdim: Int, state: SomTrainingState, sigma: Double) = {
-    val entries = DenseVector.fill[DenseVector[Double]](xdim * ydim)(DenseVector.zeros[Double](fdim))
-    (0 until xdim * ydim).foreach { i =>
-      
+  private [som] def step(xdim: Int, ydim: Int, fdim: Int, state: SomTrainingState, xsigma: Double, ysigma: Double) = {
+    var weights = DenseVector.fill[DenseVector[Double]](xdim * ydim)(DenseVector.zeros[Double](fdim))
+    val seenWeights = DenseVector[DenseVector[Double]](state.weights)
+    var neighborhoods = DenseVector.zeros[Double](xdim * ydim)
+    
+    (0 until xdim * ydim).foreach { idx =>
+      val (xc, yc) = (idx % xdim, idx / ydim)
+      val counts = state.counts(idx).toDouble
+      val hood = Neighborhood.mat(xc, xdim, xsigma, yc, ydim, ysigma).reshape(xdim * ydim, 1).toDenseVector * counts
+      neighborhoods :+ hood
+      // XXX: the rhs of this doesn't compile but I'm not sure why
+      // weights :+ (seenWeights * (hood * state.counts(idx).toDouble))
+      // XXX: so we're doing it the hard way
+      val update = DenseVector(seenWeights.values.iterator.zip((hood * state.counts(idx).toDouble).values.iterator).map { case (vd, d) => d * vd }.toArray)
+      weights :+ update
     }
+    
+    val newWeights = DenseVector(weights.values.iterator.zip(neighborhoods.values.iterator).map { case (vd, d) => vd / d }.toArray)
+    new SOM(xdim, ydim, fdim, newWeights)
   }
   
   def train(xdim: Int, ydim: Int, iterations: Int, examples: RDD[SV]) = ???
