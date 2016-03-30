@@ -27,7 +27,7 @@ import scala.util.Try
 
 import breeze.linalg.{DenseVector => BDV}
 
-object PNGWriter {
+object ImageCallbacks {
   type CoordinateHook = Int => (Int, Int)
   type ColorHook = BDV[Double] => Int
   
@@ -37,6 +37,10 @@ object PNGWriter {
     assert(dv.length >= 3)
     ((dv(0) * 255).toInt << 16) | ((dv(1) * 255).toInt << 8) | (dv(2) * 255).toInt
   }
+}
+
+object ImageWriter {  
+  import ImageCallbacks._
   
   def write(xdim: Int, ydim: Int, vecs: Seq[BDV[Double]], file: String, kind: String = "PNG") {
     write(xdim, ydim, vecs, file, kind, columnMajor(xdim), vec2rgb _)
@@ -44,7 +48,7 @@ object PNGWriter {
   
   def write(xdim: Int, ydim: Int, vecs: Seq[BDV[Double]], file: String, kind: String, coordFunc: CoordinateHook, colFunc: ColorHook) {
     val image = new BufferedImage(xdim, ydim, BufferedImage.TYPE_INT_RGB)
-    val png = new java.io.File(file)
+    val ifile = new java.io.File(file)
     
     vecs.zipWithIndex.foreach { case (vec, idx) => 
       val color = colFunc(vec)
@@ -52,6 +56,6 @@ object PNGWriter {
       image.setRGB(x, y, color)
     }
     
-    javax.imageio.ImageIO.write(image, "PNG", png)
+    javax.imageio.ImageIO.write(image, kind, ifile)
   }
 }
