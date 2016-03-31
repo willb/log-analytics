@@ -59,17 +59,18 @@ class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[Den
   
   val norms = entries.zip(entries.map(norm(_))).zipWithIndex
   
-  /** Return the index of the closest vector in the map to the supplied example */
   def closest(example: Vector[Double], exampleNorm: Option[Double] = None): Int = {
+    (closestWithSimilarity(example, exampleNorm))._1
+  }
+  
+  /** Return the index of the most similar vector in the map to the supplied example, along with its similarity */
+  def closestWithSimilarity(example: Vector[Double], exampleNorm: Option[Double] = None): (Int, Double) = {
     val vn = exampleNorm.getOrElse(norm(example))
-    val result = norms
+    norms
       .map { 
         case ((e: Vector[Double], en: Double), i: Int) => (i, math.min(1.0, math.max(-1.0, (e dot example) / (en * vn))))
       }
       .reduce { (a: Tuple2[Int, Double], b: Tuple2[Int, Double]) => if (a._2 > b._2) a else b }
-      ._1
-    Log.debug(s"SOM.closest returned ${result}")
-    result
   }
 }
 
@@ -78,12 +79,18 @@ object SOM {
   import org.apache.spark.rdd.RDD
   import org.apache.spark.mllib.linalg.{Vector=>SV, DenseVector=>SDV, SparseVector=>SSV}
   
-  private [som] case class SomTrainingState(counts: Array[Int], weights: Array[DenseVector[Double]]) {
+  private [som] case class SomTrainingState(counts: Array[Int], weights: Array[DenseVector[Double]], worst: Double) {
     /* destructively updates this state with a new example */
-    def update(index: Int, example: Vector[Double]) = {
+    def update(index: Int, example: Vector[Double]): SomTrainingState = {
       counts(index) = counts(index) + 1
       weights(index) = weights(index) + example
       this
+    }
+    
+    /* destructively updates this state with a new example and similarity */
+    def update(indexAndSimilarity: (Int, Double), example: Vector[Double]): SomTrainingState = {
+      val (index, similarity) = indexAndSimilarity
+      this.copy(worst=math.min(worst, similarity)).update(index, example)
     }
     
     /* destructively merges other into this */
@@ -92,12 +99,12 @@ object SOM {
         this.counts(index) = this.counts(index) + other.counts(index)
         this.weights(index) = this.weights(index) + other.weights(index)
       }
-      this
+      this.copy(worst=math.min(this.worst, other.worst))
     } 
   }
   
   private [som] object SomTrainingState {
-    def empty(dim: Int, fdim: Int): SomTrainingState = SomTrainingState(Array.fill(dim)(0), Array.fill(dim)(DenseVector.zeros[Double](fdim)))
+    def empty(dim: Int, fdim: Int): SomTrainingState = SomTrainingState(Array.fill(dim)(0), Array.fill(dim)(DenseVector.zeros[Double](fdim)), Double.PositiveInfinity)
   }
   
   /** initialize a self-organizing map with random weights */
@@ -147,9 +154,9 @@ object SOM {
     }
   }
   
-  def train(xdim: Int, ydim: Int, fdim: Int, iterations: Int, examples: RDD[SV], seed: Option[Int] = None): SOM = {
-    val xSigmaStep = (xdim - 0.01) / iterations
-    val ySigmaStep = (ydim - 0.01) / iterations
+  def train(xdim: Int, ydim: Int, fdim: Int, iterations: Int, examples: RDD[SV], seed: Option[Int] = None, sigmaScale: Double = 0.5, hook: (Int, SOM) => Unit = { case (_,_) => }): SOM = {
+    val xSigmaStep = ((xdim * sigmaScale) - 0.01) / iterations
+    val ySigmaStep = ((ydim * sigmaScale) - 0.01) / iterations
     val sc = examples.context
     val normedExamples = examples.map { 
       ex => {
@@ -159,18 +166,20 @@ object SOM {
     }.cache
     
     (0 until iterations).foldLeft(random(xdim, ydim, fdim, seed)) { (acc, it) =>
-      val xSigma = xdim - (xSigmaStep * it)
-      val ySigma = ydim - (ySigmaStep * it)
+      val xSigma = (xdim * sigmaScale) - (xSigmaStep * it)
+      val ySigma = (ydim * sigmaScale) - (ySigmaStep * it)
       val currentSOM = sc.broadcast(acc)
       
       val newState = normedExamples.aggregate(SomTrainingState.empty(xdim * ydim, fdim))(
-        {case (state, (example: Vector[Double], n: Double)) => state.update(currentSOM.value.closest(example, Some(n)), example)}, 
+        {case (state, (example: Vector[Double], n: Double)) => state.update(currentSOM.value.closestWithSimilarity(example, Some(n)), example)}, 
         {case (s1, s2) => s1.combine(s2)}
       )
       
       currentSOM.unpersist
       
-      step(xdim, ydim, fdim, newState, xSigma, ySigma)
+      val nextSOM = step(xdim, ydim, fdim, newState, xSigma, ySigma)
+      hook(it, nextSOM)
+      nextSOM
     }
   }
 }
