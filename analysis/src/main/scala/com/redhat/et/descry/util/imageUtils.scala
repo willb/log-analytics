@@ -32,7 +32,7 @@ object ImageCallbacks {
   type ColorHook = BDV[Double] => Int
   
   def rowMajor(cols: Int)(idx: Int) = (idx / cols, idx % cols)
-  def columnMajor(cols: Int)(idx: Int) = (idx % cols, idx / cols)
+  def columnMajor(rows: Int)(idx: Int) = (idx / rows, idx % rows)
   def vec2rgb(dv: BDV[Double]): Int = {
     assert(dv.length >= 3)
     ((dv(0) * 255).toInt << 16) | ((dv(1) * 255).toInt << 8) | (dv(2) * 255).toInt
@@ -43,7 +43,7 @@ object ImageWriter {
   import ImageCallbacks._
   
   def write(xdim: Int, ydim: Int, vecs: Seq[BDV[Double]], file: String, kind: String = "PNG") {
-    write(xdim, ydim, vecs, file, kind, columnMajor(xdim), vec2rgb _)
+    write(xdim, ydim, vecs, file, kind, columnMajor(ydim), vec2rgb _)
   }
   
   def write(xdim: Int, ydim: Int, vecs: Seq[BDV[Double]], file: String, kind: String, coordFunc: CoordinateHook, colFunc: ColorHook) {

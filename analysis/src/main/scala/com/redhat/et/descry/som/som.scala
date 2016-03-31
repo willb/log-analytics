@@ -116,7 +116,7 @@ object SOM {
     var neighborhoods = DenseVector.zeros[Double](xdim * ydim)
     
     (0 until xdim * ydim).foreach { idx =>
-      val (xc, yc) = (idx % xdim, idx / ydim)
+      val (xc, yc) = (idx / ydim, idx % ydim)
       val counts = state.counts(idx).toDouble
       val hood = Neighborhood.mat(xc, xdim, xsigma, yc, ydim, ysigma).reshape(xdim * ydim, 1).toDenseVector
       neighborhoods = neighborhoods :+ (hood * counts)
