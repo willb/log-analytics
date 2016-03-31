@@ -165,7 +165,11 @@ object SOM {
       }
     }.cache
     
-    (0 until iterations).foldLeft(random(xdim, ydim, fdim, seed)) { (acc, it) =>
+    val startState = random(xdim, ydim, fdim, seed)
+    
+    hook(0, startState)
+    
+    (0 until iterations).foldLeft(startState) { (acc, it) =>
       val xSigma = (xdim * sigmaScale) - (xSigmaStep * it)
       val ySigma = (ydim * sigmaScale) - (ySigmaStep * it)
       val currentSOM = sc.broadcast(acc)
@@ -178,7 +182,7 @@ object SOM {
       currentSOM.unpersist
       
       val nextSOM = step(xdim, ydim, fdim, newState, xSigma, ySigma)
-      hook(it, nextSOM)
+      hook(it + 1, nextSOM)
       nextSOM
     }
   }
