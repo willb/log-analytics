@@ -46,7 +46,8 @@ object LABuild  extends Build {
   
   def breezeSettings = Seq(
     libraryDependencies ++= Seq(
-      "org.scalanlp" %% "breeze" % "0.12"
+      "org.scalanlp" %% "breeze" % "0.12",
+      "org.scalanlp" %% "breeze-natives" % "0.12"
     )
   )
   
