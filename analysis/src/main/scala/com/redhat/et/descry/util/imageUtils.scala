@@ -37,6 +37,11 @@ object ImageCallbacks {
     assert(dv.length >= 3)
     ((dv(0) * 255).toInt << 16) | ((dv(1) * 255).toInt << 8) | (dv(2) * 255).toInt
   }
+  
+  def vec2argb(dv: BDV[Double]): Int = {
+    assert(dv.length >= 4)
+    ((dv(0) * 255).toInt << 24) | ((dv(1) * 255).toInt << 16) | ((dv(2) * 255).toInt << 8) | (dv(3) * 255).toInt
+  }
 }
 
 object ImageWriter {  
