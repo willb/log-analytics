@@ -90,7 +90,8 @@ object SOM {
     /* destructively updates this state with a new example and similarity */
     def update(indexAndSimilarity: (Int, Double), example: Vector[Double]): SomTrainingState = {
       val (index, similarity) = indexAndSimilarity
-      this.copy(worst=math.min(worst, similarity)).update(index, example)
+      val ret = (if (worst < similarity) this else this.copy(worst=similarity))
+      ret.update(index, example)
     }
     
     /* destructively merges other into this */
@@ -99,7 +100,8 @@ object SOM {
         this.counts(index) = this.counts(index) + other.counts(index)
         this.weights(index) = this.weights(index) + other.weights(index)
       }
-      this.copy(worst=math.min(this.worst, other.worst))
+      
+      if(this.worst < other.worst) this else this.copy(worst=other.worst)
     } 
   }
   
@@ -154,9 +156,9 @@ object SOM {
     }
   }
   
-  def train(xdim: Int, ydim: Int, fdim: Int, iterations: Int, examples: RDD[SV], seed: Option[Int] = None, sigmaScale: Double = 0.5, hook: (Int, SOM) => Unit = { case (_,_) => }): SOM = {
-    val xSigmaStep = ((xdim * sigmaScale) - 0.01) / iterations
-    val ySigmaStep = ((ydim * sigmaScale) - 0.01) / iterations
+  def train(xdim: Int, ydim: Int, fdim: Int, iterations: Int, examples: RDD[SV], seed: Option[Int] = None, sigmaScale: Double = 0.95, minSigma: Double = 1, hook: (Int, SOM) => Unit = { case (_,_) => }): SOM = {
+    val xSigmaStep = ((xdim * sigmaScale) - minSigma) / iterations
+    val ySigmaStep = ((ydim * sigmaScale) - minSigma) / iterations
     val sc = examples.context
     val normedExamples = examples.map { 
       ex => {
