@@ -117,7 +117,7 @@ object SOM {
   }
   
   /** Create a new SOM instance with the results of the training state */
-  private [som] def step(xdim: Int, ydim: Int, fdim: Int, state: SomTrainingState, xsigma: Double, ysigma: Double) = {
+  private [som] def step(xdim: Int, ydim: Int, fdim: Int, state: SomTrainingState, xsigma: Double, ysigma: Double, lastState: SOM) = {
     var weights = DenseVector.fill[DenseVector[Double]](xdim * ydim)(DenseVector.zeros[Double](fdim))
     val seenWeights = DenseVector[DenseVector[Double]](state.weights)
     var neighborhoods = DenseVector.zeros[Double](xdim * ydim)
@@ -131,9 +131,9 @@ object SOM {
       weights = weights :+ update
     }
     
-    val newWeights = DenseVector(weights.values.iterator.zip(neighborhoods.values.iterator).map { 
-      case (vd, d) if d == 0.0 => DenseVector.zeros[Double](vd.size)
-      case (vd, d) => vd / d 
+    val newWeights = DenseVector((weights.values.iterator.zip(lastState.entries.iterator)).zip(neighborhoods.values.iterator).map { 
+      case ((vd, od), d) if d == 0.0 => od
+      case ((vd, _), d) => vd / d 
     }.toArray)
     new SOM(xdim, ydim, fdim, newWeights)
   }
@@ -181,7 +181,7 @@ object SOM {
       
       currentSOM.unpersist
       
-      val nextSOM = step(xdim, ydim, fdim, newState, xSigma, ySigma)
+      val nextSOM = step(xdim, ydim, fdim, newState, xSigma, ySigma, acc)
       hook(it + 1, nextSOM)
       nextSOM
     }
