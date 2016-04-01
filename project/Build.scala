@@ -12,6 +12,9 @@ object LABuild  extends Build {
   
   lazy val root = (project in file(".")).aggregate(common, analysis)
   
+  lazy val profileRun = TaskKey[Unit]("profile-run")
+  
+  
   def baseSettings = Defaults.defaultSettings ++ Seq(
     organization := "com.redhat.et",
     version := VERSION,
@@ -29,7 +32,11 @@ object LABuild  extends Build {
         "joda-time" % "joda-time" % "2.7",
         "com.redhat.et" %% "silex" % "0.0.9"
     ),
-    scalacOptions ++= Seq("-feature", "-Yrepl-sync", "-target:jvm-1.7", "-Xlint")
+    scalacOptions ++= Seq("-feature", "-Yrepl-sync", "-target:jvm-1.7", "-Xlint"),
+    fullRunTask(profileRun in Compile, Compile, "com.redhat.et.descry.util.Profile"),
+    fork in profileRun := true,
+    javaOptions in profileRun += "-agentpath:/Applications/YourKit-Java-Profiler-2016.02.app/Contents/Resources/bin/mac/libyjpagent.jnilib",
+    javaOptions in profileRun += "-Xmx16g"
   )
   
   def sparkSettings = Seq(
