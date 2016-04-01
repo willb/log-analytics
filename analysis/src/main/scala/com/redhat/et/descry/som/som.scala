@@ -87,7 +87,7 @@ object SOM {
       this
     }
     
-    /* destructively updates this state with a new example and similarity */
+    /* destructively updates the arrays in this state with a new example; maybe creates a new wrapper to hold a new worst similarity */
     def update(indexAndSimilarity: (Int, Double), example: Vector[Double]): SomTrainingState = {
       val (index, similarity) = indexAndSimilarity
       val ret = (if (worst < similarity) this else this.copy(worst=similarity))
