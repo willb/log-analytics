@@ -66,11 +66,15 @@ class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[Den
   /** Return the index of the most similar vector in the map to the supplied example, along with its similarity */
   def closestWithSimilarity(example: Vector[Double], exampleNorm: Option[Double] = None): (Int, Double) = {
     val vn = exampleNorm.getOrElse(norm(example))
-    norms
-      .map { 
-        case ((e: Vector[Double], en: Double), i: Int) => (i, math.min(1.0, math.max(-1.0, (e dot example) / (en * vn))))
+    val ce = norms(0)
+    val initialCandidate = (0, math.min(1.0, math.max(-1.0, (ce._1._1 dot example) / (ce._1._2 * vn))))
+    
+    norms.foldLeft(initialCandidate) { 
+      case(answer: (Int, Double), ((e: Vector[Double], en: Double), i: Int)) => {
+        val candidate = (i, math.min(1.0, math.max(-1.0, (e dot example) / (en * vn))))
+        if (answer._2 > candidate._2) answer else candidate
       }
-      .reduce { (a: Tuple2[Int, Double], b: Tuple2[Int, Double]) => if (a._2 > b._2) a else b }
+    }
   }
 }
 
