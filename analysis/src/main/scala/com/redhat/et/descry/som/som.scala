@@ -67,11 +67,11 @@ class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[Den
   def closestWithSimilarity(example: Vector[Double], exampleNorm: Option[Double] = None): (Int, Double) = {
     val vn = exampleNorm.getOrElse(norm(example))
     val ce = norms(0)
-    val initialCandidate = (0, math.min(1.0, math.max(-1.0, (ce._1._1 dot example) / (ce._1._2 * vn))))
+    val initialCandidate = (0, math.min(1.0, math.max(-1.0, (example dot ce._1._1) / (ce._1._2 * vn))))
     
     norms.foldLeft(initialCandidate) { 
       case(answer: (Int, Double), ((e: Vector[Double], en: Double), i: Int)) => {
-        val candidate = (i, math.min(1.0, math.max(-1.0, (e dot example) / (en * vn))))
+        val candidate = (i, math.min(1.0, math.max(-1.0, (example dot e) / (en * vn))))
         if (answer._2 > candidate._2) answer else candidate
       }
     }
@@ -147,7 +147,7 @@ object SOM {
   @inline private [som] def spark2breeze(vec: SV): Vector[Double] = {
     vec match {
       case sv: SSV => {
-        val vb = new VectorBuilder[Double]()
+        val vb = new VectorBuilder[Double](sv.size)
         (sv.indices zip sv.values).foreach { case (idx: Int, v: Double) =>
           vb.add(idx, v)
         }
