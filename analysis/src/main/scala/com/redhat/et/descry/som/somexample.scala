@@ -9,7 +9,7 @@ object Example {
   def apply(xdim: Int, ydim: Int, iterations: Int, sc: SparkContext, exampleCount: Int): SOM = {
     val rnd = new scala.util.Random()
     val colors = Array.fill(exampleCount)(new DV(Array.fill(3)(rnd.nextDouble)).compressed)
-    val examples = sc.parallelize(colors)
+    val examples = sc.parallelize(colors).repartition(sc.defaultParallelism * 8)
     
     def writeStep(step: Int, som: SOM) {
       ImageWriter.write(xdim, ydim, som.entries, "som-step-%04d.png".format(step))
