@@ -22,10 +22,16 @@ package com.redhat.et.descry.util
 
 import com.redhat.et.silex.app.AppCommon
 
+trait ProfileFixture extends Function1[org.apache.spark.SparkContext, Unit] {}
 
 object Profile extends AppCommon {
+  val fixtures = Map(
+    "com.redhat.et.descry.som.Profile" -> com.redhat.et.descry.som.Profile, 
+    "com.redhat.et.descry.som.ProfileSparse" -> com.redhat.et.descry.som.ProfileSparse
+  )
+  
   override def appName = "descry-profile"
   override def appMain(args: Array[String]) {
-    com.redhat.et.descry.som.Example.profile(context)
+    args.foreach {which => fixtures.get(which).map { fixture => fixture.apply(context) } }
   }
 }

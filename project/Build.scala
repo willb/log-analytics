@@ -3,6 +3,7 @@ import Keys._
 
 object LABuild  extends Build {
   val VERSION = "0.0.1-SNAPSHOT"
+  val PROFILEAGENT = sys.env.getOrElse("JAVA_PROFILER_AGENT", "-agentlib:hprof=cpu=samples")
   
   lazy val common = project settings(commonSettings : _*)
   
@@ -12,8 +13,7 @@ object LABuild  extends Build {
   
   lazy val root = (project in file(".")).aggregate(common, analysis)
   
-  lazy val profileRun = TaskKey[Unit]("profile-run")
-  
+  lazy val profileAll = TaskKey[Unit]("profile-all")
   
   def baseSettings = Defaults.defaultSettings ++ Seq(
     organization := "com.redhat.et",
@@ -33,10 +33,10 @@ object LABuild  extends Build {
         "com.redhat.et" %% "silex" % "0.0.9"
     ),
     scalacOptions ++= Seq("-feature", "-Yrepl-sync", "-target:jvm-1.7", "-Xlint"),
-    fullRunTask(profileRun in Compile, Compile, "com.redhat.et.descry.util.Profile"),
-    fork in profileRun := true,
-    javaOptions in profileRun += "-agentpath:/Applications/YourKit-Java-Profiler-2016.02.app/Contents/Resources/bin/mac/libyjpagent.jnilib",
-    javaOptions in profileRun += "-Xmx16g"
+    fullRunTask(profileAll in Compile, Compile, "com.redhat.et.descry.util.Profile", "com.redhat.et.descry.som.ProfileSparse", "com.redhat.et.descry.som.Profile"),
+    fork in profileAll := true,
+    javaOptions in profileAll += PROFILEAGENT,
+    javaOptions in profileAll += "-Xmx8g"
   )
   
   def sparkSettings = Seq(
