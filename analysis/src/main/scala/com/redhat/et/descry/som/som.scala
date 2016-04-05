@@ -52,12 +52,14 @@ object Neighborhood {
   }
 }
 
-class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[DenseVector[Double]]) extends Serializable {
+class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[DenseVector[Double]], val worstSimOpt: Option[Double] = None) extends Serializable {
   import breeze.numerics._
   
   val entries = _entries.toArray
   
   val norms = entries.zip(entries.map(norm(_))).zipWithIndex
+  
+  def worstSim(orElse: Double = Double.PositiveInfinity) = worstSimOpt.getOrElse(orElse)
   
   def closest(example: Vector[Double], exampleNorm: Option[Double] = None): Int = {
     (closestWithSimilarity(example, exampleNorm))._1
@@ -141,7 +143,7 @@ object SOM {
       case ((vd, od), d) if d == 0.0 => od
       case ((vd, _), d) => vd / d 
     }.toArray)
-    new SOM(xdim, ydim, fdim, newWeights)
+    new SOM(xdim, ydim, fdim, newWeights, Some(state.worst))
   }
   
   @inline private [som] def spark2breeze(vec: SV): Vector[Double] = {
