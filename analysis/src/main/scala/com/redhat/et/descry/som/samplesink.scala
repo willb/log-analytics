@@ -24,7 +24,7 @@ package com.redhat.et.descry.som
  * On-line mean and variance estimates for a stream of Double values.
  * Uses the technique from <a href="http://dl.acm.org/citation.cfm?id=359153">"Updating mean and variance estimates: an improved method"</a>, by D. H. D. West (1979).
 */
-sealed class SampleSink(private var _count: Long, private var _min: Double, private var _max: Double, private var _mean: Double, private var _m2: Double) {
+sealed class SampleSink(private var _count: Long, private var _min: Double, private var _max: Double, private var _mean: Double, private var _m2: Double) extends java.io.Serializable {
   // TODO:  parameterize this over sample (at least), fractional (mean/variance), and integral (count) types
   
   // TODO:  rework to use Pébay's algorithm (support arbitrary moments, support combining stream estimates) to make this code more generally useful
