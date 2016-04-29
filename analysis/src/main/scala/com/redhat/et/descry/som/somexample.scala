@@ -56,7 +56,19 @@ object Profile extends ProfileFixture {
     val points = Array.fill(exampleCount)(new DV(Array.fill(features)(rnd.nextDouble)).compressed)
     val examples = sc.parallelize(points).repartition(partitions)
 
-    com.redhat.et.descry.som.SOM.train(xdim, ydim, features, iterations, examples, sigmaScale=0.7)
+    val floatPoints = Array.fill(exampleCount)(new DV(Array.fill(features)(rnd.nextFloat)).compressed)
+    val floatExamples = sc.parallelize(points).repartition(partitions)
+
+    val startDouble = java.lang.System.currentTimeMillis
+    val result = com.redhat.et.descry.som.SOM.train(xdim, ydim, features, iterations, examples, sigmaScale=0.7)
+    val endDouble = java.lang.System.currentTimeMillis
+
+    val startFloat = java.lang.System.currentTimeMillis
+    com.redhat.et.descry.som.FloatSOM.train(xdim, ydim, features, iterations, floatExamples, sigmaScale=0.7f)
+    val endFloat = java.lang.System.currentTimeMillis
+    
+    println("double SOM trained in %d ms; float SOM trained in %d ms".format(endDouble - startDouble, endFloat - startFloat))
+    result
   }
 }
 
