@@ -52,14 +52,14 @@ object Neighborhood {
   }
 }
 
-class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[DenseVector[Double]], val worstSimOpt: Option[Double] = None) extends Serializable {
+class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[DenseVector[Double]], private val mqsink: SampleSink) extends Serializable {
   import breeze.numerics._
   
   val entries = _entries.toArray
   
   val norms = entries.zip(entries.map(norm(_))).zipWithIndex
   
-  def worstSim(orElse: Double = Double.PositiveInfinity) = worstSimOpt.getOrElse(orElse)
+  def trainingMatchQuality = { SampleSink.empty += mqsink }
   
   def closest(example: Vector[Double], exampleNorm: Option[Double] = None): Int = {
     (closestWithSimilarity(example, exampleNorm))._1
@@ -85,7 +85,7 @@ object SOM {
   import org.apache.spark.rdd.RDD
   import org.apache.spark.mllib.linalg.{Vector=>SV, DenseVector=>SDV, SparseVector=>SSV}
   
-  private [som] case class SomTrainingState(counts: Array[Int], weights: Array[DenseVector[Double]], worst: Double) {
+  private [som] case class SomTrainingState(counts: Array[Int], weights: Array[DenseVector[Double]], mqsink: SampleSink) {
     /* destructively updates this state with a new example */
     def update(index: Int, example: Vector[Double]): SomTrainingState = {
       counts(index) = counts(index) + 1
@@ -96,8 +96,8 @@ object SOM {
     /* destructively updates the arrays in this state with a new example; maybe creates a new wrapper to hold a new worst similarity */
     def update(indexAndSimilarity: (Int, Double), example: Vector[Double]): SomTrainingState = {
       val (index, similarity) = indexAndSimilarity
-      val ret = (if (worst < similarity) this else this.copy(worst=similarity))
-      ret.update(index, example)
+      mqsink.put(similarity)
+      this.update(index, example)
     }
     
     /* destructively merges other into this */
@@ -107,12 +107,15 @@ object SOM {
         this.weights(index) = this.weights(index) + other.weights(index)
       }
       
-      if(this.worst < other.worst) this else this.copy(worst=other.worst)
-    } 
+      this.mqsink += other.mqsink
+      this
+    }
+    
+    def matchQuality = SampleSink.empty += mqsink
   }
   
   private [som] object SomTrainingState {
-    def empty(dim: Int, fdim: Int): SomTrainingState = SomTrainingState(Array.fill(dim)(0), Array.fill(dim)(DenseVector.zeros[Double](fdim)), Double.PositiveInfinity)
+    def empty(dim: Int, fdim: Int): SomTrainingState = SomTrainingState(Array.fill(dim)(0), Array.fill(dim)(DenseVector.zeros[Double](fdim)), SampleSink.empty)
   }
   
   /** initialize a self-organizing map with random weights */
@@ -121,7 +124,7 @@ object SOM {
     val rng = seed.map { s => new scala.util.Random(s) }.getOrElse(new scala.util.Random())
     val randomMap = DenseVector.fill[DenseVector[Double]](xdim * ydim)(DenseVector.fill[Double](fdim)(rng.nextDouble()))
 
-    new SOM(xdim, ydim, fdim, randomMap)
+    new SOM(xdim, ydim, fdim, randomMap, SampleSink.empty)
   }
   
   /** Create a new SOM instance with the results of the training state */
@@ -143,7 +146,7 @@ object SOM {
       case ((vd, od), d) if d == 0.0 => od
       case ((vd, _), d) => vd / d 
     }.toArray)
-    new SOM(xdim, ydim, fdim, newWeights, Some(state.worst))
+    new SOM(xdim, ydim, fdim, newWeights, state.matchQuality)
   }
   
   @inline private [som] def spark2breeze(vec: SV): Vector[Double] = {
