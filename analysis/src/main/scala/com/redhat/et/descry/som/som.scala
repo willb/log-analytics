@@ -54,6 +54,7 @@ object Neighborhood {
 
 class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[DenseVector[Double]], private val mqsink: SampleSink) extends Serializable {
   import breeze.numerics._
+  import org.apache.spark.mllib.linalg.{Vector=>SV, DenseVector=>SDV, SparseVector=>SSV}
   
   val entries = _entries.toArray
   
@@ -77,6 +78,10 @@ class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[Den
         if (answer._2 > candidate._2) answer else candidate
       }
     }
+  }
+  
+  def closestWithSimilarity(example: SV, exampleNorm: Option[Double]): (Int, Double) = {
+    closestWithSimilarity(SOM.spark2breeze(example), exampleNorm)
   }
 }
 
