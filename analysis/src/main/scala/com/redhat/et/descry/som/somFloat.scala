@@ -29,7 +29,7 @@ object FloatHood {
   /** Returns a <tt>dim</tt>-element vector of the values for the one-dimensional Gaussian neighborhood function, centered at <tt>c</tt> */
   def vec(c: Int, dim: Int, sigma: Float): DenseVector[Float] = {
     // weights for each distance
-    val weights = (0 to math.max(c, math.abs(dim - c))).map { x => gaussian(x.toFloat, sigma) }
+    val weights = (0 to math.max(c, math.abs(dim - c))).map { x => gaussian(x, sigma) }
     DenseVector((0 until dim).map { x => weights(math.abs(x - c))}.toArray)
   }
   
@@ -60,7 +60,7 @@ class FloatSOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVecto
     
     norms.foldLeft(initialCandidate) { 
       case(answer: (Int, Float), ((e: Vector[Float], en: Float), i: Int)) => {
-        val candidate = (i, math.min(1.0f, math.max(-1.0f, (example dot e).toFloat / (en * vn))))
+        val candidate = (i, math.min(1.0f, math.max(-1.0f, (example dot e) / (en * vn))))
         if (answer._2 > candidate._2) answer else candidate
       }
     }
