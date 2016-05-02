@@ -89,7 +89,30 @@ object SOM {
   import breeze.numerics._
   import org.apache.spark.rdd.RDD
   import org.apache.spark.mllib.linalg.{Vector=>SV, DenseVector=>SDV, SparseVector=>SSV}
-  
+
+  import com.esotericsoftware.kryo.Kryo
+  import com.esotericsoftware.kryo.io.{Input, Output}
+  import org.objenesis.strategy.StdInstantiatorStrategy
+  import scala.util.Try
+
+  def save(som: SOM, path: String): Try[Unit] = {
+    Try({
+      val k = new Kryo()
+      val out = new Output(new java.io.FileOutputStream(path))
+      k.writeClassAndObject(out, som)
+      ()
+    })
+  }
+
+  def load(path: String): Try[SOM] = {
+    Try({
+      val k = new Kryo()
+      val input = new Input(new java.io.FileInputStream(path))
+      k.setInstantiatorStrategy(new StdInstantiatorStrategy())
+      k.readClassAndObject(input).asInstanceOf[SOM]
+    })
+  }
+
   private [som] case class SomTrainingState(counts: Array[Int], weights: Array[DenseVector[Double]], mqsink: SampleSink) {
     /* destructively updates this state with a new example */
     def update(index: Int, example: Vector[Double]): SomTrainingState = {
