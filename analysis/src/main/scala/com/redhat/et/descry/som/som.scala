@@ -212,10 +212,17 @@ object SOM {
       val xSigma = (xdim * sigmaScale) - (xSigmaStep * it)
       val ySigma = (ydim * sigmaScale) - (ySigmaStep * it)
       val currentSOM = sc.broadcast(acc)
-      
-      val newState = normedExamples.aggregate(SomTrainingState.empty(xdim * ydim, fdim))(
+
+      // TODO: this is a pretty coarse way to get a depth hint;
+      // consider setting depth with an eye towards maximum driver
+      // result size
+
+      val depth = math.max(4.0, math.ceil(math.log(normedExamples.getNumPartitions) / math.log(4.0))).toInt
+
+      val newState = normedExamples.treeAggregate(SomTrainingState.empty(xdim * ydim, fdim))(
         {case (state, (example: Vector[Double], n: Double)) => state.update(currentSOM.value.closestWithSimilarity(example, Some(n)), example)}, 
-        {case (s1, s2) => s1.combine(s2)}
+        {case (s1, s2) => s1.combine(s2)},
+	depth
       )
       
       currentSOM.unpersist
