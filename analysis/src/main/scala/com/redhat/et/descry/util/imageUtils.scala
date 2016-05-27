@@ -33,6 +33,12 @@ object ImageCallbacks {
   
   def rowMajor(cols: Int)(idx: Int) = (idx / cols, idx % cols)
   def columnMajor(rows: Int)(idx: Int) = (idx / rows, idx % rows)
+  
+  def normalizedToGrayscale(dv: BDV[Double]): Int = {
+    assert(dv.length == 1)
+    ((dv(0) * 255).toInt << 16) | ((dv(0) * 255).toInt << 8) | (dv(0) * 255).toInt
+  }
+  
   def vec2rgb(dv: BDV[Double]): Int = {
     assert(dv.length >= 3)
     ((dv(0) * 255).toInt << 16) | ((dv(1) * 255).toInt << 8) | (dv(2) * 255).toInt

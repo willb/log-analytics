@@ -25,7 +25,7 @@ import com.redhat.et.descry.util.ProfileFixture
 object Example {
   import org.apache.spark.mllib.linalg.{DenseVector => DV}
   import com.redhat.et.descry.som.SOM
-  import com.redhat.et.descry.util.ImageWriter
+  import com.redhat.et.descry.util.{ImageWriter, ImageCallbacks}
   import org.apache.spark.SparkContext
   
   def apply(xdim: Int, ydim: Int, iterations: Int, sc: SparkContext, exampleCount: Int, seed: Option[Int] = None): SOM = {
@@ -34,6 +34,11 @@ object Example {
     val examples = sc.parallelize(colors).repartition(sc.defaultParallelism * 8)
     
     def writeStep(step: Int, som: SOM) {
+      val (xsigma, ysigma) = som.mapSigmas(identity[(Double, Double)] _).get
+      val maxCount = som.mapCounts(c => c.max.toDouble).get
+      val hood = Neighborhood.mat(0, xdim, xsigma, 0, ydim, ysigma).reshape(xdim * ydim, 1).toDenseVector.toArray.map(x => breeze.linalg.DenseVector[Double](x))
+      ImageWriter.write(xdim, ydim, som.mapCounts { cts => cts.map { x => breeze.linalg.DenseVector[Double](x / maxCount) }}.get, "som-counts-%04d.png".format(step), "PNG", ImageCallbacks.columnMajor(ydim), ImageCallbacks.normalizedToGrayscale _)
+      ImageWriter.write(xdim, ydim, hood, "som-hood-%04d.png".format(step), "PNG", ImageCallbacks.columnMajor(ydim), ImageCallbacks.normalizedToGrayscale _)
       ImageWriter.write(xdim, ydim, som.entries, "som-step-%04d.png".format(step))
     }
     

@@ -52,7 +52,7 @@ object Neighborhood {
   }
 }
 
-class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[DenseVector[Double]], private val mqsink: SampleSink) extends Serializable {
+class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[DenseVector[Double]], private val mqsink: SampleSink, private val counts: Option[Array[Int]] = None, private val sigmas: Option[(Double, Double)] = None) extends Serializable {
   import breeze.numerics._
   import org.apache.spark.mllib.linalg.{Vector=>SV, DenseVector=>SDV, SparseVector=>SSV}
   
@@ -83,6 +83,9 @@ class SOM(val xdim: Int, val ydim: Int, val fdim: Int, _entries: DenseVector[Den
   def closestWithSimilarity(example: SV, exampleNorm: Option[Double]): (Int, Double) = {
     closestWithSimilarity(SOM.spark2breeze(example), exampleNorm)
   }
+  
+  def mapCounts[A](f: Array[Int] => A): Option[A] = counts.map(f)
+  def mapSigmas[A](f: ((Double, Double)) => A): Option[A] = sigmas.map(f)
 }
 
 object SOM {
@@ -151,7 +154,7 @@ object SOM {
       case ((vd, od), d) if d == 0.0 => od
       case ((vd, _), d) => vd / d 
     }.toArray)
-    new SOM(xdim, ydim, fdim, newWeights, state.matchQuality)
+    new SOM(xdim, ydim, fdim, newWeights, state.matchQuality, Some(Array(state.counts : _*)), Some((xsigma, ysigma)))
   }
   
   @inline private [som] def spark2breeze(vec: SV): Vector[Double] = {
