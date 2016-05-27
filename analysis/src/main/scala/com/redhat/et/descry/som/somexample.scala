@@ -37,8 +37,8 @@ object Example {
       val (xsigma, ysigma) = som.mapSigmas(identity[(Double, Double)] _).get
       val maxCount = som.mapCounts(c => c.max.toDouble).get
       val hood = Neighborhood.mat(0, xdim, xsigma, 0, ydim, ysigma).reshape(xdim * ydim, 1).toDenseVector.toArray.map(x => breeze.linalg.DenseVector[Double](x))
-      ImageWriter.write(xdim, ydim, som.mapCounts { cts => cts.map { x => breeze.linalg.DenseVector[Double](x / maxCount) }}.get, "som-counts-%04d.png".format(step), "PNG", ImageCallbacks.columnMajor(ydim), ImageCallbacks.normalizedToGrayscale _)
-      ImageWriter.write(xdim, ydim, hood, "som-hood-%04d.png".format(step), "PNG", ImageCallbacks.columnMajor(ydim), ImageCallbacks.normalizedToGrayscale _)
+      ImageWriter.write(xdim, ydim, som.mapCounts { cts => cts.map { x => breeze.linalg.DenseVector[Double](x / maxCount) }}.get, "som-counts-%04d.png".format(step), "PNG", ImageCallbacks.columnMajor(ydim), ImageCallbacks.normalizedToGrayscaleInverse _)
+      ImageWriter.write(xdim, ydim, hood, "som-hood-%04d.png".format(step), "PNG", ImageCallbacks.columnMajor(ydim), ImageCallbacks.normalizedToGrayscaleInverse _)
       ImageWriter.write(xdim, ydim, som.entries, "som-step-%04d.png".format(step))
     }
     

@@ -132,7 +132,7 @@ object SOM {
     val rng = seed.map { s => new scala.util.Random(s) }.getOrElse(new scala.util.Random())
     val randomMap = DenseVector.fill[DenseVector[Double]](xdim * ydim)(DenseVector.fill[Double](fdim)(rng.nextDouble()))
 
-    new SOM(xdim, ydim, fdim, randomMap, SampleSink.empty)
+    new SOM(xdim, ydim, fdim, randomMap, SampleSink.empty, Some(Array.fill(xdim * ydim)(0)), Some((xdim, ydim)))
   }
   
   /** Create a new SOM instance with the results of the training state */

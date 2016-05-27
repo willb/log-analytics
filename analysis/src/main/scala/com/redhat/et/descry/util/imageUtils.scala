@@ -39,6 +39,12 @@ object ImageCallbacks {
     ((dv(0) * 255).toInt << 16) | ((dv(0) * 255).toInt << 8) | (dv(0) * 255).toInt
   }
   
+  def normalizedToGrayscaleInverse(dv: BDV[Double]): Int = {
+    assert(dv.length == 1)
+    val v = ((1.0 - dv(0)) * 255).toInt
+    (v << 16) | (v << 8) | v
+  }
+  
   def vec2rgb(dv: BDV[Double]): Int = {
     assert(dv.length >= 3)
     ((dv(0) * 255).toInt << 16) | ((dv(1) * 255).toInt << 8) | (dv(2) * 255).toInt
