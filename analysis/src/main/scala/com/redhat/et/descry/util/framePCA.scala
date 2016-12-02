@@ -58,17 +58,17 @@ class PCATransformer(override val uid: String, private val extra: ParamMap = Par
     StructType(schema.fields ++ Seq(StructField(outc, VT, true)))
   }
 
-  def transform(df: DataFrame) = {
+  def transform(df: Dataset[_]) = {
     val (inCol, outCol, pcs) = pvals(extractParamMap(extra))
-    val featureRDD = df.select(inCol).map { case Row(v: VEC) => v }
+    val featureRDD = df.select(inCol).rdd.map { case Row(v: VEC) => v }
     featureRDD.cache
     
     val model = df.sqlContext.sparkContext.broadcast(new PCA(pcs).fit(featureRDD))
     
     featureRDD.unpersist()
+
+    val transform = udf({ a: VEC => model.value.transform(a)}, VT)
     
-    df.withColumn(outCol, callUDF({ a: VEC =>
-      model.value.transform(a)
-    }, VT, df(inCol)))
+    df.withColumn(outCol, transform(df(inCol)))
   }
 }

@@ -30,7 +30,7 @@ object LABuild  extends Build {
         "org.json4s" %%  "json4s-jackson" % "3.2.10",
         "org.json4s" %% "json4s-ext" % "3.2.11",
         "joda-time" % "joda-time" % "2.7",
-        "com.redhat.et" %% "silex" % "0.0.9"
+        "com.redhat.et" %% "silex" % "0.1.0"
     ),
     scalacOptions ++= Seq("-feature", "-Yrepl-sync", "-target:jvm-1.7", "-Xlint"),
     fullRunTask(profileAll in Compile, Compile, "com.redhat.et.descry.util.Profile", "com.redhat.et.descry.som.ProfileSparse", "com.redhat.et.descry.som.Profile"),
@@ -105,6 +105,6 @@ object LABuild  extends Build {
     libraryDependencies += "org.scala-lang" % "jline" % SCALA_VERSION
   )
   
-  val SPARK_VERSION = "1.6.1"
+  val SPARK_VERSION = "2.0.2"
   val SCALA_VERSION = "2.11.8"
 }
